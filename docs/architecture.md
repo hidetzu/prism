@@ -55,11 +55,13 @@ flowchart LR
     B --> C[PullRequest<br/>domain model]
     C --> D[Classifier]
     D --> E[Analyzer]
-    E --> F[AnalysisResult]
+    E --> F[prism.Result]
     F --> G{Output}
-    G -->|analyze| H[Formatter<br/>JSON / Markdown]
+    G -->|analyze| H[Formatter<br/>JSON / Markdown / Text]
     G -->|prompt| I[Prompt Renderer<br/>light / detailed / cross]
 ```
+
+The `analyze` flow is exposed as `pkg/prism.Analyze()` and used by both the CLI and external library consumers. The `prompt` flow currently goes through `internal/usecase`.
 
 ## Package Responsibilities
 
@@ -71,7 +73,7 @@ Exposes `Analyze` and `Prompt` functions, stable input/output types (`AnalyzeOpt
 
 Consumers:
 
-- **cmd/prism** — the CLI (refactor to use pkg/prism is Phase 2)
+- **cmd/prism** — the CLI (`analyze` command uses `pkg/prism.Analyze()` internally)
 - **prism-api** — HTTP service (planned)
 - **Editor / IDE plugins** — library consumers
 - **CI / automation tools** — library consumers
@@ -80,7 +82,7 @@ See [ADR-0002](adr/0002-public-api-boundary.md) for the design rationale and com
 
 ### `cmd/prism`
 
-CLI entrypoint. Parses arguments, resolves configuration, and delegates to use cases. Should remain thin.
+CLI entrypoint. Parses arguments, loads configuration, and delegates to either `pkg/prism` (for `analyze`) or `internal/usecase` (for `prompt` and `fetch`). Should remain thin.
 
 ### `internal/domain`
 
@@ -123,7 +125,7 @@ Estimates risk level and suggests review axes based on classification results an
 
 ### `internal/formatter`
 
-Serializes `AnalysisResult` into output formats (JSON, Markdown, text).
+Serializes `pkg/prism.Result` into output formats (JSON, Markdown, text). Used by `cmd/prism analyze` to render the result returned by `pkg/prism.Analyze()`. The CLI JSON output is byte-identical to `pkg/prism.Result` JSON, verified by golden tests.
 
 ### `internal/prompt`
 
@@ -131,7 +133,9 @@ Renders `PromptBundle` for each review mode using templates.
 
 ### `internal/usecase`
 
-Orchestrates the pipeline: fetch → classify → analyze → format/render. Each use case corresponds to a CLI command.
+Orchestrates the pipeline for `prism prompt` and `prism fetch` commands. The `analyze` use case has been replaced by `pkg/prism.Analyze()` (the CLI calls `pkg/prism` directly and formats the result via `internal/formatter`).
+
+Deferred to a future phase: extending `pkg/prism.Prompt` to cover the prompt CLI features (`--format json|markdown`, `--template`), so that prompt and fetch can also flow through `pkg/prism`.
 
 ## Design Principles
 

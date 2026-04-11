@@ -10,20 +10,17 @@ import (
 
 func TestFormatTextContainsTitle(t *testing.T) {
 	var buf bytes.Buffer
-	err := formatter.FormatText(&buf, "github", testPR(), testResult())
-	if err != nil {
+	if err := formatter.FormatText(&buf, testResult()); err != nil {
 		t.Fatalf("FormatText: %v", err)
 	}
-	out := buf.String()
-	if !strings.Contains(out, "Add OAuth2 login") {
+	if !strings.Contains(buf.String(), "Add OAuth2 login") {
 		t.Error("output missing PR title")
 	}
 }
 
 func TestFormatTextContainsMetadata(t *testing.T) {
 	var buf bytes.Buffer
-	err := formatter.FormatText(&buf, "github", testPR(), testResult())
-	if err != nil {
+	if err := formatter.FormatText(&buf, testResult()); err != nil {
 		t.Fatalf("FormatText: %v", err)
 	}
 	out := buf.String()
@@ -34,6 +31,7 @@ func TestFormatTextContainsMetadata(t *testing.T) {
 		"feature/oauth",
 		"main",
 		"github",
+		"https://github.com/owner/repo/pull/42",
 	}
 	for _, c := range checks {
 		if !strings.Contains(out, c) {
@@ -44,8 +42,7 @@ func TestFormatTextContainsMetadata(t *testing.T) {
 
 func TestFormatTextContainsAnalysis(t *testing.T) {
 	var buf bytes.Buffer
-	err := formatter.FormatText(&buf, "github", testPR(), testResult())
-	if err != nil {
+	if err := formatter.FormatText(&buf, testResult()); err != nil {
 		t.Fatalf("FormatText: %v", err)
 	}
 	out := buf.String()
@@ -62,8 +59,7 @@ func TestFormatTextContainsAnalysis(t *testing.T) {
 
 func TestFormatTextChangedFiles(t *testing.T) {
 	var buf bytes.Buffer
-	err := formatter.FormatText(&buf, "github", testPR(), testResult())
-	if err != nil {
+	if err := formatter.FormatText(&buf, testResult()); err != nil {
 		t.Fatalf("FormatText: %v", err)
 	}
 	out := buf.String()
@@ -77,12 +73,10 @@ func TestFormatTextChangedFiles(t *testing.T) {
 
 func TestFormatTextWarnings(t *testing.T) {
 	var buf bytes.Buffer
-	err := formatter.FormatText(&buf, "github", testPR(), testResult())
-	if err != nil {
+	if err := formatter.FormatText(&buf, testResult()); err != nil {
 		t.Fatalf("FormatText: %v", err)
 	}
-	out := buf.String()
-	if !strings.Contains(out, "New authentication flow") {
+	if !strings.Contains(buf.String(), "New authentication flow") {
 		t.Error("output missing warning")
 	}
 }

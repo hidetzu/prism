@@ -65,3 +65,22 @@ func TestResolvePluginNotFound(t *testing.T) {
 		t.Fatal("expected error for missing plugin binary")
 	}
 }
+
+func TestNewRegistryWithGitHubBaseURL(t *testing.T) {
+	reg := NewRegistryWithGitHubBaseURL("test-token", "http://localhost:9999")
+	if reg.githubToken != "test-token" {
+		t.Errorf("githubToken = %q", reg.githubToken)
+	}
+	if reg.githubBaseURL != "http://localhost:9999" {
+		t.Errorf("githubBaseURL = %q", reg.githubBaseURL)
+	}
+
+	// Should still resolve to a github provider for github.com URLs.
+	p, err := reg.Resolve("", "https://github.com/o/r/pull/1")
+	if err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+	if p == nil {
+		t.Fatal("provider is nil")
+	}
+}

@@ -174,19 +174,19 @@ The `AnalyzeOptions` struct is designed to be **additive-only**: new optional fi
 - **Formatter functions** — callers work with `Result` as structured data, not serialized strings. If string output is needed, callers format `Result` themselves.
 - **Prompt templates** — templates are internal. Custom templates are still supported via `--template` at the CLI level, which reads from a file path.
 
-### 4. Differences from the CLI JSON schema
+### 4. CLI JSON output and `Result` are byte-identical
 
-`Result` is **structurally similar** to the CLI JSON output (`docs/json-schema.md`) but not identical. The differences are intentional:
+As of Phase 2 (v0.3.0), the CLI JSON output is produced by serializing `pkg/prism.Result` directly. The two are guaranteed to be byte-identical, verified by golden tests in `internal/formatter/testdata/`.
 
-| Field | CLI JSON | `pkg/prism.Result` | Reason |
-|-------|----------|---------------------|--------|
-| `provider` | top-level | `pull_request.provider` | Library consumers treat the PR as a self-contained object; provider belongs with PR metadata |
+The Phase 1 design intentionally diverged from the v0.2.x CLI JSON schema in three places:
+
+| Field | v0.2.x CLI JSON | `pkg/prism.Result` (v0.3.0+) | Reason |
+|-------|------------------|------------------------------|--------|
+| `provider` | top-level | `pull_request.provider` | Provider belongs with PR metadata; library consumers treat the PR as a self-contained object |
 | `pull_request.description` | included | **excluded** | Descriptions can be large and are rarely needed by programmatic consumers; reduces response size |
 | `pull_request.url` | not present | **included** | Avoids requiring consumers to reconstruct the URL from owner/repo/id |
 
-These differences will be unified in **Phase 2** when the CLI is refactored to use `pkg/prism` internally. At that point, the CLI JSON schema will align with `pkg/prism.Result` (a potential breaking change to CLI output, to be announced in release notes).
-
-Until then, consumers who need the exact CLI JSON shape should use the CLI binary; consumers who want the library API should use `pkg/prism`.
+In v0.3.0, the CLI JSON schema is updated to match `pkg/prism.Result`. This is a **breaking change** to the CLI JSON output, documented in the v0.3.0 release notes.
 
 ### 5. Compatibility guarantees
 
@@ -264,18 +264,21 @@ Accepted. Minimal public surface, maximum internal freedom, clean consumer story
 3. Add unit tests for `pkg/prism` covering validation and error categorization
 4. Document the public API in `docs/public-api.md` or README
 
-### Phase 2 (subsequent PR)
+### Phase 2 (completed in v0.3.0)
 
-5. Refactor `cmd/prism` to use `pkg/prism` internally
-   - `analyze` JSON format: call `pkg/prism.Analyze()` and `json.Marshal(result)`
-   - `analyze` markdown/text format: either reuse existing `internal/formatter` (taking `Result`) or keep current path
-   - `prompt` command: switch to `pkg/prism.Prompt()`
-6. Verify CLI JSON output matches `pkg/prism.Result` JSON exactly via a golden test
+5. Refactor `cmd/prism analyze` to use `pkg/prism.Analyze()` internally ✓
+6. Rewrite `internal/formatter` to take `prism.Result` instead of domain types ✓
+7. Update CLI JSON schema to match `pkg/prism.Result` (breaking change documented in release notes) ✓
 
-### Phase 3 (after CLI refactor)
+### Phase 2 deferred items
 
-7. Create `prism-api` repository
-8. Tag prism v0.3.0 once the public API is validated
+- `cmd/prism prompt` still uses `internal/usecase` because `pkg/prism.Prompt()` returns a plain string and does not yet cover `--format json|markdown` or `--template`. Future work: extend `pkg/prism` with a `RenderPrompt` function returning a structured bundle.
+- `cmd/prism fetch` still uses `internal/usecase` since it bypasses analysis entirely.
+
+### Phase 3
+
+8. Create `prism-api` repository
+9. Tag prism v0.3.0 once the public API is validated
 
 ---
 

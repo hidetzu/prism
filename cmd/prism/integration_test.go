@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -11,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/hidetzu/prism/internal/domain"
-	"github.com/hidetzu/prism/internal/formatter"
 	"github.com/hidetzu/prism/internal/provider"
 	ghprovider "github.com/hidetzu/prism/internal/provider/github"
 	"github.com/hidetzu/prism/internal/usecase"
@@ -158,82 +156,10 @@ func TestCLIHelpContainsCommands(t *testing.T) {
 	}
 }
 
-// TestUsecaseIntegrationAnalyzeJSON tests the full pipeline through usecase layer
-// with a mock HTTP server, verifying JSON output structure.
-func TestUsecaseIntegrationAnalyzeJSON(t *testing.T) {
-	server := setupGitHubMock(t)
-	t.Cleanup(server.Close)
-
-	// Use provider with mock server directly.
-	ghprov := newTestProvider(t, server)
-	ref, err := ghprov.Parse("https://github.com/owner/repo/pull/1")
-	if err != nil {
-		t.Fatalf("Parse: %v", err)
-	}
-
-	var buf bytes.Buffer
-	err = usecaseAnalyze(t, ghprov, ref, "json", &buf)
-	if err != nil {
-		t.Fatalf("Analyze: %v", err)
-	}
-
-	var out formatter.Output
-	if err := json.Unmarshal(buf.Bytes(), &out); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
-	if out.Provider != "github" {
-		t.Errorf("provider = %q", out.Provider)
-	}
-	if out.PullRequest.Title != "Fix login bug" {
-		t.Errorf("title = %q", out.PullRequest.Title)
-	}
-	if out.Analysis.ChangeType != "bugfix" {
-		t.Errorf("change_type = %q, want bugfix", out.Analysis.ChangeType)
-	}
-	if len(out.ChangedFiles) != 2 {
-		t.Errorf("changed_files = %d, want 2", len(out.ChangedFiles))
-	}
-}
-
-func TestUsecaseIntegrationAnalyzeMarkdown(t *testing.T) {
-	server := setupGitHubMock(t)
-	t.Cleanup(server.Close)
-
-	ghprov := newTestProvider(t, server)
-	ref, _ := ghprov.Parse("https://github.com/owner/repo/pull/1")
-
-	var buf bytes.Buffer
-	if err := usecaseAnalyze(t, ghprov, ref, "markdown", &buf); err != nil {
-		t.Fatalf("Analyze markdown: %v", err)
-	}
-	out := buf.String()
-	if !strings.Contains(out, "# Fix login bug") {
-		t.Error("markdown missing title")
-	}
-	if !strings.Contains(out, "bugfix") {
-		t.Error("markdown missing change type")
-	}
-}
-
-func TestUsecaseIntegrationAnalyzeText(t *testing.T) {
-	server := setupGitHubMock(t)
-	t.Cleanup(server.Close)
-
-	ghprov := newTestProvider(t, server)
-	ref, _ := ghprov.Parse("https://github.com/owner/repo/pull/1")
-
-	var buf bytes.Buffer
-	if err := usecaseAnalyze(t, ghprov, ref, "text", &buf); err != nil {
-		t.Fatalf("Analyze text: %v", err)
-	}
-	out := buf.String()
-	if !strings.Contains(out, "Fix login bug") {
-		t.Error("text missing title")
-	}
-	if !strings.Contains(out, "bugfix") {
-		t.Error("text missing change type")
-	}
-}
+// Note: The analyze pipeline (provider → classifier → analyzer → formatter) is
+// covered by unit tests in pkg/prism, internal/formatter, internal/classifier,
+// and internal/analyzer. The integration tests below focus on prompt and fetch
+// use cases which still go through internal/usecase.
 
 func TestUsecaseIntegrationPromptLight(t *testing.T) {
 	server := setupGitHubMock(t)
@@ -363,11 +289,6 @@ func (p *ghProviderForTest) Parse(input string) (domain.PRRef, error) {
 func (p *ghProviderForTest) FetchPullRequest(ctx context.Context, ref domain.PRRef) (domain.PullRequest, error) {
 	prov := ghprovider.NewProviderWithClient(p.server.Client(), "", p.server.URL)
 	return prov.FetchPullRequest(ctx, ref)
-}
-
-func usecaseAnalyze(t *testing.T, p provider.Provider, ref domain.PRRef, format string, buf *bytes.Buffer) error {
-	t.Helper()
-	return usecase.Analyze(context.Background(), p, ref, usecase.AnalyzeOptions{Format: format}, buf)
 }
 
 func usecasePrompt(t *testing.T, p provider.Provider, ref domain.PRRef, mode, format, lang string, buf *bytes.Buffer) error {

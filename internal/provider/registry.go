@@ -2,6 +2,7 @@ package provider
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"os/exec"
 
@@ -12,12 +13,20 @@ import (
 
 // Registry manages built-in and plugin providers.
 type Registry struct {
-	githubToken string
+	githubToken   string
+	githubBaseURL string // empty = use the real GitHub API
 }
 
 // NewRegistry creates a provider registry.
 func NewRegistry(githubToken string) *Registry {
 	return &Registry{githubToken: githubToken}
+}
+
+// NewRegistryWithGitHubBaseURL creates a registry that points the GitHub
+// provider at a custom base URL. Used by tests to redirect API calls to a
+// local httptest server.
+func NewRegistryWithGitHubBaseURL(githubToken, baseURL string) *Registry {
+	return &Registry{githubToken: githubToken, githubBaseURL: baseURL}
 }
 
 // Resolve returns a Provider for the given PR URL.
@@ -34,6 +43,9 @@ func (r *Registry) Resolve(providerName string, prURL string) (Provider, error) 
 
 	switch providerName {
 	case "github":
+		if r.githubBaseURL != "" {
+			return github.NewProviderWithClient(http.DefaultClient, r.githubToken, r.githubBaseURL), nil
+		}
 		return github.NewProvider(r.githubToken), nil
 	default:
 		return r.resolvePlugin(providerName, prURL)

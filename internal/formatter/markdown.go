@@ -5,63 +5,62 @@ import (
 	"io"
 	"strings"
 
-	"github.com/hidetzu/prism/internal/domain"
+	"github.com/hidetzu/prism/pkg/prism"
 )
 
-// FormatMarkdown writes the analysis result as human-readable Markdown to w.
-func FormatMarkdown(w io.Writer, providerName string, pr domain.PullRequest, result domain.AnalysisResult) error {
+// FormatMarkdown writes a prism.Result as human-readable Markdown to w.
+func FormatMarkdown(w io.Writer, result prism.Result) error {
 	var b strings.Builder
 
 	// Header
-	fmt.Fprintf(&b, "# %s\n\n", pr.Title)
+	fmt.Fprintf(&b, "# %s\n\n", result.PR.Title)
 
 	// Metadata
 	b.WriteString("## Pull Request\n\n")
 	fmt.Fprintf(&b, "| Field | Value |\n")
 	fmt.Fprintf(&b, "|-------|-------|\n")
-	fmt.Fprintf(&b, "| Repository | %s |\n", pr.Repository)
-	fmt.Fprintf(&b, "| PR | #%s |\n", pr.ID)
-	fmt.Fprintf(&b, "| Author | %s |\n", pr.Author)
-	fmt.Fprintf(&b, "| Branch | %s -> %s |\n", pr.SourceBranch, pr.TargetBranch)
-	fmt.Fprintf(&b, "| Provider | %s |\n", providerName)
-	b.WriteString("\n")
-
-	if pr.Description != "" {
-		b.WriteString("### Description\n\n")
-		b.WriteString(pr.Description)
-		b.WriteString("\n\n")
+	fmt.Fprintf(&b, "| Repository | %s |\n", result.PR.Repository)
+	fmt.Fprintf(&b, "| PR | #%s |\n", result.PR.ID)
+	fmt.Fprintf(&b, "| Author | %s |\n", result.PR.Author)
+	fmt.Fprintf(&b, "| Branch | %s -> %s |\n", result.PR.SourceBranch, result.PR.TargetBranch)
+	fmt.Fprintf(&b, "| Provider | %s |\n", result.PR.Provider)
+	if result.PR.URL != "" {
+		fmt.Fprintf(&b, "| URL | %s |\n", result.PR.URL)
 	}
+	b.WriteString("\n")
 
 	// Analysis
 	b.WriteString("## Analysis\n\n")
-	fmt.Fprintf(&b, "- **Change Type:** %s\n", result.ChangeType)
-	fmt.Fprintf(&b, "- **Risk Level:** %s\n", result.RiskLevel)
-	fmt.Fprintf(&b, "- **Summary:** %s\n", result.Summary)
+	fmt.Fprintf(&b, "- **Change Type:** %s\n", result.Analysis.ChangeType)
+	fmt.Fprintf(&b, "- **Risk Level:** %s\n", result.Analysis.RiskLevel)
+	if result.Analysis.Summary != "" {
+		fmt.Fprintf(&b, "- **Summary:** %s\n", result.Analysis.Summary)
+	}
 	b.WriteString("\n")
 
 	// Review Axes
-	if len(result.ReviewAxes) > 0 {
+	if len(result.Analysis.ReviewAxes) > 0 {
 		b.WriteString("### Review Axes\n\n")
-		for _, axis := range result.ReviewAxes {
+		for _, axis := range result.Analysis.ReviewAxes {
 			fmt.Fprintf(&b, "- %s\n", axis)
 		}
 		b.WriteString("\n")
 	}
 
 	// Affected Areas
-	if len(result.AffectedAreas) > 0 {
+	if len(result.Analysis.AffectedAreas) > 0 {
 		b.WriteString("### Affected Areas\n\n")
-		for _, area := range result.AffectedAreas {
+		for _, area := range result.Analysis.AffectedAreas {
 			fmt.Fprintf(&b, "- %s\n", area)
 		}
 		b.WriteString("\n")
 	}
 
 	// Warnings
-	if len(result.Warnings) > 0 {
+	if len(result.Analysis.Warnings) > 0 {
 		b.WriteString("### Warnings\n\n")
-		for _, w := range result.Warnings {
-			fmt.Fprintf(&b, "- %s\n", w)
+		for _, warn := range result.Analysis.Warnings {
+			fmt.Fprintf(&b, "- %s\n", warn)
 		}
 		b.WriteString("\n")
 	}
@@ -70,7 +69,7 @@ func FormatMarkdown(w io.Writer, providerName string, pr domain.PullRequest, res
 	b.WriteString("## Changed Files\n\n")
 	fmt.Fprintf(&b, "| File | Status | +/- | Language |\n")
 	fmt.Fprintf(&b, "|------|--------|-----|----------|\n")
-	for _, f := range pr.ChangedFiles {
+	for _, f := range result.Files {
 		flags := fileFlags(f)
 		name := f.Path
 		if flags != "" {
@@ -85,7 +84,7 @@ func FormatMarkdown(w io.Writer, providerName string, pr domain.PullRequest, res
 	return err
 }
 
-func fileFlags(f domain.ChangedFile) string {
+func fileFlags(f prism.ChangedFile) string {
 	var flags []string
 	if f.IsTest {
 		flags = append(flags, "test")

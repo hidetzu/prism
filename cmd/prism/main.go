@@ -9,11 +9,13 @@ import (
 
 	"github.com/hidetzu/prism/internal/config"
 	"github.com/hidetzu/prism/internal/domain"
+	"github.com/hidetzu/prism/internal/formatter"
 	"github.com/hidetzu/prism/internal/provider"
 	"github.com/hidetzu/prism/internal/usecase"
+	"github.com/hidetzu/prism/pkg/prism"
 )
 
-const version = "0.2.0"
+const version = "0.3.0-dev"
 
 // Exit codes as defined in docs/spec.md.
 const (
@@ -33,9 +35,13 @@ func main() {
 
 func exitCode(err error) int {
 	switch {
-	case errors.Is(err, domain.ErrInvalidArgs):
+	case errors.Is(err, domain.ErrInvalidArgs),
+		errors.Is(err, prism.ErrInvalidInput),
+		errors.Is(err, prism.ErrUnsupportedProvider):
 		return ExitInvalidArgs
-	case errors.Is(err, domain.ErrProvider):
+	case errors.Is(err, domain.ErrProvider),
+		errors.Is(err, prism.ErrAuthRequired),
+		errors.Is(err, prism.ErrUpstreamFailure):
 		return ExitProviderError
 	case errors.Is(err, domain.ErrAnalysis):
 		return ExitAnalysisError
@@ -134,19 +140,36 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("load config: %w", err)
 	}
 
-	p, ref, err := resolveProvider(cmd, cfg, args[0])
-	if err != nil {
-		return err
-	}
-
 	format, _ := cmd.Flags().GetString("format")
 	if format == "" {
 		format = cfg.DefaultFormat
 	}
+	if format == "" {
+		format = "json"
+	}
+	if format != "json" && format != "markdown" && format != "text" {
+		return fmt.Errorf("%w: invalid format %q: must be json, markdown, or text", domain.ErrInvalidArgs, format)
+	}
 
-	return usecase.Analyze(cmd.Context(), p, ref, usecase.AnalyzeOptions{
-		Format: format,
-	}, os.Stdout)
+	providerName, _ := cmd.Flags().GetString("provider")
+
+	result, err := prism.Analyze(cmd.Context(), prism.AnalyzeOptions{
+		Provider:    providerName,
+		PRURL:       args[0],
+		GitHubToken: cfg.GitHubToken,
+	})
+	if err != nil {
+		return err
+	}
+
+	switch format {
+	case "markdown":
+		return formatter.FormatMarkdown(os.Stdout, result)
+	case "text":
+		return formatter.FormatText(os.Stdout, result)
+	default:
+		return formatter.FormatJSON(os.Stdout, result)
+	}
 }
 
 func runPrompt(cmd *cobra.Command, args []string) error {

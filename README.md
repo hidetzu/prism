@@ -105,28 +105,16 @@ prism fetch <PR_URL> --format text         # Raw PR data as text
 
 ```json
 {
-  "provider": "github",
   "pull_request": {
+    "provider": "github",
     "repository": "owner/repo",
     "id": "123",
     "title": "Add retry handling for payment API",
     "author": "example",
     "source_branch": "feature/payment-retry",
     "target_branch": "main",
-    "description": "Adds retry logic for transient payment API failures"
+    "url": "https://github.com/owner/repo/pull/123"
   },
-  "changed_files": [
-    {
-      "path": "internal/payment/client.go",
-      "status": "modified",
-      "additions": 45,
-      "deletions": 3,
-      "language": "Go",
-      "is_test": false,
-      "is_config": false,
-      "is_generated": false
-    }
-  ],
   "analysis": {
     "change_type": "feature",
     "risk_level": "medium",
@@ -145,7 +133,16 @@ prism fetch <PR_URL> --format text         # Raw PR data as text
       "No test files included in this change"
     ],
     "summary": "feature: Add retry handling for payment API (1 file changed, +45/-3)"
-  }
+  },
+  "changed_files": [
+    {
+      "path": "internal/payment/client.go",
+      "status": "modified",
+      "additions": 45,
+      "deletions": 3,
+      "language": "Go"
+    }
+  ]
 }
 ```
 
@@ -166,6 +163,7 @@ prism fetch <PR_URL> --format text         # Raw PR data as text
 | Author | example |
 | Branch | feature/payment-retry -> main |
 | Provider | github |
+| URL | https://github.com/owner/repo/pull/123 |
 
 ## Analysis
 
@@ -435,8 +433,9 @@ make clean    # Remove bin/
 
 - **v0.1.0** — GitHub provider, analyze/prompt/fetch commands, JSON/Markdown/text output, light/detailed/cross modes, config/lang/template support, exit codes ✅
 - **v0.2.0** — Provider plugin architecture, `--provider` flag, AWS CodeCommit support via plugin ✅
-- **v0.3.0** — Policy files, custom review axes, project-specific rules
-- **v0.4.0+** — Review policy as code, SARIF output, metrics, IDE/CI integration
+- **v0.3.0** — Public library API (`pkg/prism`), CLI uses `pkg/prism` internally, foundation for `prism-api` (HTTP service)
+- **v0.4.0** — Policy files, custom review axes, project-specific rules
+- **v0.5.0+** — SARIF output, metrics, IDE/CI integration
 
 ## Releases
 

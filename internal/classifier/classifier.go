@@ -104,4 +104,3 @@ func classifyByDescription(desc string) (domain.ChangeType, bool) {
 
 	return "", false
 }
-

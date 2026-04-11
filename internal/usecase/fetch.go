@@ -8,7 +8,6 @@ import (
 
 	"github.com/hidetzu/prism/internal/domain"
 	"github.com/hidetzu/prism/internal/provider"
-
 )
 
 // FetchOptions holds options for the Fetch use case.
