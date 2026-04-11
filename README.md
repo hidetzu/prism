@@ -356,6 +356,61 @@ Supported: `en` (English, default), `ja` (Japanese)
 
 ---
 
+## Library Usage
+
+prism exposes a stable public API at [`pkg/prism`](pkg/prism) for embedding in other Go programs.
+
+```go
+import (
+    "context"
+    "fmt"
+    "os"
+
+    "github.com/hidetzu/prism/pkg/prism"
+)
+
+ctx := context.Background()
+
+// Analyze: structured analysis
+result, err := prism.Analyze(ctx, prism.AnalyzeOptions{
+    PRURL:       "https://github.com/owner/repo/pull/123",
+    GitHubToken: os.Getenv("GITHUB_TOKEN"),
+})
+if err != nil {
+    // errors.Is(err, prism.ErrInvalidInput)
+    // errors.Is(err, prism.ErrUnsupportedProvider)
+    // errors.Is(err, prism.ErrAuthRequired)
+    // errors.Is(err, prism.ErrUpstreamFailure)
+    return err
+}
+fmt.Println(result.PR.Title, result.Analysis.RiskLevel)
+
+// Prompt: review prompt text for AI consumption
+reviewPrompt, err := prism.Prompt(ctx, prism.AnalyzeOptions{
+    PRURL:       "https://github.com/owner/repo/pull/123",
+    GitHubToken: os.Getenv("GITHUB_TOKEN"),
+    Mode:        "detailed", // light | detailed | cross
+    Language:    "en",       // en | ja
+})
+if err != nil {
+    return err
+}
+fmt.Println(reviewPrompt)
+```
+
+### Stable surface
+
+Only the symbols exported from `pkg/prism` are part of the public API contract. Everything under `internal/` is subject to change.
+
+- `prism.Analyze(ctx, opts) (Result, error)` — structured analysis
+- `prism.Prompt(ctx, opts) (string, error)` — review prompt text
+- `prism.AnalyzeOptions` / `prism.Result` / `prism.PRInfo` / `prism.AnalysisResult` / `prism.ChangedFile`
+- Sentinel errors: `ErrInvalidInput`, `ErrUnsupportedProvider`, `ErrAuthRequired`, `ErrUpstreamFailure`
+
+See [ADR-0002](docs/adr/0002-public-api-boundary.md) for the design rationale and compatibility policy.
+
+---
+
 ## Philosophy
 
 - **Stop prompting. Start structuring.** — Consistent AI review quality starts with structured input, not better prompts.
