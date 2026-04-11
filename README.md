@@ -12,6 +12,8 @@ A prism decomposes light into its spectrum. **prism** decomposes pull requests �
 
 **PR → structured context → stable AI review.**
 
+![prism demo](docs/demo/demo.gif)
+
 ---
 
 ## The problem
@@ -248,16 +250,33 @@ prism analyze <PR_URL> --provider github                          # explicit Git
 prism analyze <PR_URL> --provider codecommit                      # explicit CodeCommit (requires plugin)
 ```
 
-### Plugin providers
+### CodeCommit plugin
+
+CodeCommit support is provided by the [prism-provider-codecommit](https://github.com/hidetzu/prism-provider-codecommit) plugin, which wraps [ccpr](https://github.com/hidetzu/ccpr) to fetch CodeCommit PR data.
+
+```bash
+# Install the plugin
+go install github.com/hidetzu/prism-provider-codecommit/cmd/prism-provider-codecommit@latest
+
+# Use it
+prism analyze https://ap-northeast-1.console.aws.amazon.com/codesuite/codecommit/repositories/my-repo/pull-requests/42
+```
+
+### Plugin architecture
 
 External providers are distributed as separate binaries named `prism-provider-<name>` and discovered on PATH. Plugins receive a PR URL and return structured JSON to stdout.
 
-```bash
-# Plugin invocation (called by prism internally):
-prism-provider-codecommit fetch <PR_URL>
+```
+prism (core)
+    ↓ subprocess
+provider plugin (prism-provider-<name>)
+    ↓ API call
+provider (GitHub / CodeCommit / ...)
 ```
 
-See [ADR-0001](docs/adr/0001-provider-plugin-architecture.md) for design details.
+This keeps the prism core lightweight and provider-agnostic. Writing a new plugin requires only conforming to the [plugin protocol](docs/provider-plugin-protocol.md).
+
+See [ADR-0001](docs/adr/0001-provider-plugin-architecture.md) for design rationale.
 
 ---
 
@@ -337,6 +356,14 @@ Supported: `en` (English, default), `ja` (Japanese)
 
 ---
 
+## Philosophy
+
+- **Stop prompting. Start structuring.** — Consistent AI review quality starts with structured input, not better prompts.
+- **PRs are not readable by LLMs as-is.** — Raw diffs lack intent, risk, and context.
+- **AI review quality starts with review design.** — prism is the design layer between PRs and AI.
+
+---
+
 ## Development
 
 ```bash
@@ -347,12 +374,19 @@ make vet      # go vet
 make clean    # Remove bin/
 ```
 
+---
+
 ## Roadmap
 
-- **v0.1.0** — GitHub provider, analyze/prompt/fetch commands, JSON/Markdown/text output, light/detailed/cross modes, config/lang/template support, exit codes
-- **v0.2.0** — Provider plugin architecture, `--provider` flag, AWS CodeCommit provider
+- **v0.1.0** — GitHub provider, analyze/prompt/fetch commands, JSON/Markdown/text output, light/detailed/cross modes, config/lang/template support, exit codes ✅
+- **v0.2.0** — Provider plugin architecture, `--provider` flag, AWS CodeCommit support via plugin ✅
 - **v0.3.0** — Policy files, custom review axes, project-specific rules
 - **v0.4.0+** — Review policy as code, SARIF output, metrics, IDE/CI integration
+
+## Releases
+
+- [v0.2.0](https://github.com/hidetzu/prism/releases/tag/v0.2.0) — Provider plugin architecture + CodeCommit support
+- [v0.1.0](https://github.com/hidetzu/prism/releases/tag/v0.1.0) — Initial release
 
 ## License
 
