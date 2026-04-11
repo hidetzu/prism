@@ -442,6 +442,8 @@ make clean    # Remove bin/
 - [v0.2.0](https://github.com/hidetzu/prism/releases/tag/v0.2.0) — Provider plugin architecture + CodeCommit support
 - [v0.1.0](https://github.com/hidetzu/prism/releases/tag/v0.1.0) — Initial release
 
+See [CHANGELOG.md](CHANGELOG.md) for the full history and breaking changes.
+
 ## License
 
 MIT
