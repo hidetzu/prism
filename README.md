@@ -236,7 +236,7 @@ prism analyze <PR_URL> --provider github   # Explicit provider
 | Provider | Type | Status |
 |----------|------|--------|
 | GitHub | Built-in | Supported |
-| AWS CodeCommit | Plugin | In progress (v0.2.0) |
+| AWS CodeCommit | Plugin | Supported ([prism-provider-codecommit](https://github.com/hidetzu/prism-provider-codecommit)) |
 
 ### Provider selection
 

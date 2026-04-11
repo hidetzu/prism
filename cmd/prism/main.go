@@ -13,7 +13,7 @@ import (
 	"github.com/hidetzu/prism/internal/usecase"
 )
 
-const version = "0.2.0-alpha.1"
+const version = "0.2.0"
 
 // Exit codes as defined in docs/spec.md.
 const (
