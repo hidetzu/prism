@@ -109,3 +109,10 @@ func TestFetchRequiresURL(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 }
+
+func TestProviderFlag(t *testing.T) {
+	cmd := rootCmd()
+	if cmd.PersistentFlags().Lookup("provider") == nil {
+		t.Error("missing persistent flag --provider")
+	}
+}

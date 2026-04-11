@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/hidetzu/prism/internal/domain"
-	"github.com/hidetzu/prism/internal/provider"
 )
 
 const apiBaseURL = "https://api.github.com"
@@ -14,9 +13,6 @@ const apiBaseURL = "https://api.github.com"
 type Provider struct {
 	client *Client
 }
-
-// Verify interface compliance at compile time.
-var _ provider.Provider = (*Provider)(nil)
 
 // NewProvider creates a GitHub provider with the given token.
 func NewProvider(token string) *Provider {

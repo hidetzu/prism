@@ -210,6 +210,9 @@ prism prompt <PR_URL> --template my.tmpl   # Custom template
 # Debug
 prism fetch <PR_URL> --format json         # Raw PR data
 prism fetch <PR_URL> --format text         # Raw PR data as text
+
+# Provider selection (available on all commands)
+prism analyze <PR_URL> --provider github   # Explicit provider
 ```
 
 </details>
@@ -226,12 +229,35 @@ prism fetch <PR_URL> --format text         # Raw PR data as text
 
 ---
 
-## Supported Providers
+## Providers
 
-| Provider | Status |
-|----------|--------|
-| GitHub | Supported |
-| AWS CodeCommit | Planned (v0.2.0) |
+### Supported providers
+
+| Provider | Type | Status |
+|----------|------|--------|
+| GitHub | Built-in | Supported |
+| AWS CodeCommit | Plugin | In progress (v0.2.0) |
+
+### Provider selection
+
+By default, prism auto-detects the provider from the PR URL. Use `--provider` to specify explicitly:
+
+```bash
+prism analyze https://github.com/owner/repo/pull/123              # auto-detected as GitHub
+prism analyze <PR_URL> --provider github                          # explicit GitHub
+prism analyze <PR_URL> --provider codecommit                      # explicit CodeCommit (requires plugin)
+```
+
+### Plugin providers
+
+External providers are distributed as separate binaries named `prism-provider-<name>` and discovered on PATH. Plugins receive a PR URL and return structured JSON to stdout.
+
+```bash
+# Plugin invocation (called by prism internally):
+prism-provider-codecommit fetch <PR_URL>
+```
+
+See [ADR-0001](docs/adr/0001-provider-plugin-architecture.md) for design details.
 
 ---
 
@@ -324,7 +350,7 @@ make clean    # Remove bin/
 ## Roadmap
 
 - **v0.1.0** — GitHub provider, analyze/prompt/fetch commands, JSON/Markdown/text output, light/detailed/cross modes, config/lang/template support, exit codes
-- **v0.2.0** — AWS CodeCommit provider
+- **v0.2.0** — Provider plugin architecture, `--provider` flag, AWS CodeCommit provider
 - **v0.3.0** — Policy files, custom review axes, project-specific rules
 - **v0.4.0+** — Review policy as code, SARIF output, metrics, IDE/CI integration
 
