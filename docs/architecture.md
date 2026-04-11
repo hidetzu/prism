@@ -63,6 +63,21 @@ flowchart LR
 
 ## Package Responsibilities
 
+### `pkg/prism`
+
+Public API for embedding prism as a library. The only exported package outside of `cmd/`.
+
+Exposes `Analyze` and `Prompt` functions, stable input/output types (`AnalyzeOptions`, `Result`, `PRInfo`, `AnalysisResult`, `ChangedFile`), and sentinel errors (`ErrInvalidInput`, `ErrUnsupportedProvider`, `ErrAuthRequired`, `ErrUpstreamFailure`) for client-side branching.
+
+Consumers:
+
+- **cmd/prism** — the CLI (refactor to use pkg/prism is Phase 2)
+- **prism-api** — HTTP service (planned)
+- **Editor / IDE plugins** — library consumers
+- **CI / automation tools** — library consumers
+
+See [ADR-0002](adr/0002-public-api-boundary.md) for the design rationale and compatibility policy.
+
 ### `cmd/prism`
 
 CLI entrypoint. Parses arguments, resolves configuration, and delegates to use cases. Should remain thin.

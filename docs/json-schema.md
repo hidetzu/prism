@@ -1,5 +1,9 @@
 # JSON Output Reference
 
+This document describes the JSON output of the `prism analyze` CLI command.
+
+> **Note:** Library consumers using [`pkg/prism`](../pkg/prism) receive a `Result` struct that is structurally similar but not identical to this CLI JSON output. See [ADR-0002](adr/0002-public-api-boundary.md) for the differences. The CLI JSON schema and `pkg/prism.Result` will be unified in Phase 2 when the CLI is refactored to call `pkg/prism` internally.
+
 ## `prism analyze` output
 
 ### Top-level structure
