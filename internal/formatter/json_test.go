@@ -7,29 +7,40 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/hidetzu/prism/internal/domain"
 	"github.com/hidetzu/prism/internal/formatter"
+	"github.com/hidetzu/prism/pkg/prism"
 )
 
-func testPR() domain.PullRequest {
-	return domain.PullRequest{
-		Repository:   "owner/repo",
-		ID:           "42",
-		Title:        "Add OAuth2 login",
-		Author:       "dev",
-		SourceBranch: "feature/oauth",
-		TargetBranch: "main",
-		Description:  "Adds OAuth2 login flow",
-		ChangedFiles: []domain.ChangedFile{
+func testResult() prism.Result {
+	return prism.Result{
+		PR: prism.PRInfo{
+			Provider:     "github",
+			Repository:   "owner/repo",
+			ID:           "42",
+			Title:        "Add OAuth2 login",
+			Author:       "dev",
+			SourceBranch: "feature/oauth",
+			TargetBranch: "main",
+			URL:          "https://github.com/owner/repo/pull/42",
+		},
+		Analysis: prism.AnalysisResult{
+			ChangeType:    "feature",
+			RiskLevel:     "medium",
+			AffectedAreas: []string{"auth"},
+			ReviewAxes:    []string{"security", "error handling"},
+			Warnings:      []string{"New authentication flow"},
+			Summary:       "Adds OAuth2 login flow with tests",
+		},
+		Files: []prism.ChangedFile{
 			{
 				Path:      "internal/auth/oauth.go",
-				Status:    domain.FileStatusAdded,
+				Status:    "added",
 				Additions: 120,
 				Language:  "Go",
 			},
 			{
 				Path:      "internal/auth/oauth_test.go",
-				Status:    domain.FileStatusAdded,
+				Status:    "added",
 				Additions: 80,
 				Language:  "Go",
 				IsTest:    true,
@@ -38,21 +49,9 @@ func testPR() domain.PullRequest {
 	}
 }
 
-func testResult() domain.AnalysisResult {
-	return domain.AnalysisResult{
-		ChangeType:    domain.ChangeTypeFeature,
-		RiskLevel:     domain.RiskLevelMedium,
-		AffectedAreas: []string{"auth"},
-		ReviewAxes:    []domain.ReviewAxis{domain.ReviewAxisSecurity, domain.ReviewAxisErrorHandling},
-		Warnings:      []string{"New authentication flow"},
-		Summary:       "Adds OAuth2 login flow with tests",
-	}
-}
-
 func TestFormatJSONGolden(t *testing.T) {
 	var buf bytes.Buffer
-	err := formatter.FormatJSON(&buf, "github", testPR(), testResult())
-	if err != nil {
+	if err := formatter.FormatJSON(&buf, testResult()); err != nil {
 		t.Fatalf("FormatJSON: %v", err)
 	}
 
@@ -62,7 +61,6 @@ func TestFormatJSONGolden(t *testing.T) {
 		t.Fatalf("read golden file: %v", err)
 	}
 
-	// Normalize both by re-encoding to ensure consistent formatting.
 	got := normalizeJSON(t, buf.Bytes())
 	expected := normalizeJSON(t, want)
 
@@ -73,24 +71,26 @@ func TestFormatJSONGolden(t *testing.T) {
 
 func TestFormatJSONStructure(t *testing.T) {
 	var buf bytes.Buffer
-	err := formatter.FormatJSON(&buf, "github", testPR(), testResult())
-	if err != nil {
+	if err := formatter.FormatJSON(&buf, testResult()); err != nil {
 		t.Fatalf("FormatJSON: %v", err)
 	}
 
-	var out formatter.Output
+	var out prism.Result
 	if err := json.Unmarshal(buf.Bytes(), &out); err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
 
-	if out.Provider != "github" {
-		t.Errorf("provider = %q, want %q", out.Provider, "github")
+	if out.PR.Provider != "github" {
+		t.Errorf("pull_request.provider = %q, want %q", out.PR.Provider, "github")
 	}
-	if out.PullRequest.ID != "42" {
-		t.Errorf("pull_request.id = %q, want %q", out.PullRequest.ID, "42")
+	if out.PR.ID != "42" {
+		t.Errorf("pull_request.id = %q, want %q", out.PR.ID, "42")
 	}
-	if len(out.ChangedFiles) != 2 {
-		t.Errorf("changed_files length = %d, want 2", len(out.ChangedFiles))
+	if out.PR.URL != "https://github.com/owner/repo/pull/42" {
+		t.Errorf("pull_request.url = %q", out.PR.URL)
+	}
+	if len(out.Files) != 2 {
+		t.Errorf("changed_files length = %d, want 2", len(out.Files))
 	}
 	if out.Analysis.ChangeType != "feature" {
 		t.Errorf("analysis.change_type = %q, want %q", out.Analysis.ChangeType, "feature")
@@ -100,40 +100,14 @@ func TestFormatJSONStructure(t *testing.T) {
 	}
 }
 
-func TestFormatJSONNilSlices(t *testing.T) {
-	pr := domain.PullRequest{
-		Repository: "o/r",
-		ID:         "1",
-	}
-	result := domain.AnalysisResult{
-		ChangeType: domain.ChangeTypeBugfix,
-		RiskLevel:  domain.RiskLevelLow,
-		// All slice fields are nil.
-	}
-
+func TestFormatJSONOmitsDescription(t *testing.T) {
 	var buf bytes.Buffer
-	err := formatter.FormatJSON(&buf, "github", pr, result)
-	if err != nil {
+	if err := formatter.FormatJSON(&buf, testResult()); err != nil {
 		t.Fatalf("FormatJSON: %v", err)
 	}
 
-	var out formatter.Output
-	if err := json.Unmarshal(buf.Bytes(), &out); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
-
-	// Nil slices should become empty arrays, not null.
-	if out.Analysis.AffectedAreas == nil {
-		t.Error("affected_areas is null, want empty array")
-	}
-	if out.Analysis.ReviewAxes == nil {
-		t.Error("review_axes is null, want empty array")
-	}
-	if out.Analysis.RelatedFiles == nil {
-		t.Error("related_files is null, want empty array")
-	}
-	if out.Analysis.Warnings == nil {
-		t.Error("warnings is null, want empty array")
+	if bytes.Contains(buf.Bytes(), []byte("description")) {
+		t.Errorf("output should not contain 'description' field, got: %s", buf.String())
 	}
 }
 

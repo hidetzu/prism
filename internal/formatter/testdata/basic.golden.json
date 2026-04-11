@@ -1,36 +1,14 @@
 {
-  "provider": "github",
   "pull_request": {
+    "provider": "github",
     "repository": "owner/repo",
     "id": "42",
     "title": "Add OAuth2 login",
     "author": "dev",
     "source_branch": "feature/oauth",
     "target_branch": "main",
-    "description": "Adds OAuth2 login flow"
+    "url": "https://github.com/owner/repo/pull/42"
   },
-  "changed_files": [
-    {
-      "path": "internal/auth/oauth.go",
-      "status": "added",
-      "additions": 120,
-      "deletions": 0,
-      "language": "Go",
-      "is_test": false,
-      "is_config": false,
-      "is_generated": false
-    },
-    {
-      "path": "internal/auth/oauth_test.go",
-      "status": "added",
-      "additions": 80,
-      "deletions": 0,
-      "language": "Go",
-      "is_test": true,
-      "is_config": false,
-      "is_generated": false
-    }
-  ],
   "analysis": {
     "change_type": "feature",
     "risk_level": "medium",
@@ -41,10 +19,26 @@
       "security",
       "error handling"
     ],
-    "related_files": [],
     "warnings": [
       "New authentication flow"
     ],
     "summary": "Adds OAuth2 login flow with tests"
-  }
+  },
+  "changed_files": [
+    {
+      "path": "internal/auth/oauth.go",
+      "status": "added",
+      "additions": 120,
+      "deletions": 0,
+      "language": "Go"
+    },
+    {
+      "path": "internal/auth/oauth_test.go",
+      "status": "added",
+      "additions": 80,
+      "deletions": 0,
+      "language": "Go",
+      "is_test": true
+    }
+  ]
 }

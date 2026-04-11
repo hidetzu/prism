@@ -201,4 +201,3 @@ func mapFileStatus(status string) domain.FileStatus {
 		return domain.FileStatusModified
 	}
 }
-

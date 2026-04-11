@@ -6,10 +6,6 @@ import (
 	"github.com/hidetzu/prism/internal/domain"
 )
 
-var validAnalyzeFormats = map[string]bool{
-	"json": true, "markdown": true, "text": true,
-}
-
 var validPromptModes = map[string]bool{
 	"light": true, "detailed": true, "cross": true,
 }
@@ -24,14 +20,6 @@ var validFetchFormats = map[string]bool{
 
 var validLangs = map[string]bool{
 	"en": true, "ja": true,
-}
-
-// ValidateAnalyzeOptions returns an error if options are invalid.
-func ValidateAnalyzeOptions(opts AnalyzeOptions) error {
-	if opts.Format != "" && !validAnalyzeFormats[opts.Format] {
-		return fmt.Errorf("%w: invalid format %q: must be json, markdown, or text", domain.ErrInvalidArgs, opts.Format)
-	}
-	return nil
 }
 
 // ValidatePromptOptions returns an error if options are invalid.

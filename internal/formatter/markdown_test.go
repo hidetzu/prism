@@ -5,26 +5,23 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hidetzu/prism/internal/domain"
 	"github.com/hidetzu/prism/internal/formatter"
+	"github.com/hidetzu/prism/pkg/prism"
 )
 
 func TestFormatMarkdownContainsTitle(t *testing.T) {
 	var buf bytes.Buffer
-	err := formatter.FormatMarkdown(&buf, "github", testPR(), testResult())
-	if err != nil {
+	if err := formatter.FormatMarkdown(&buf, testResult()); err != nil {
 		t.Fatalf("FormatMarkdown: %v", err)
 	}
-	out := buf.String()
-	if !strings.Contains(out, "# Add OAuth2 login") {
+	if !strings.Contains(buf.String(), "# Add OAuth2 login") {
 		t.Error("output missing PR title header")
 	}
 }
 
 func TestFormatMarkdownContainsMetadata(t *testing.T) {
 	var buf bytes.Buffer
-	err := formatter.FormatMarkdown(&buf, "github", testPR(), testResult())
-	if err != nil {
+	if err := formatter.FormatMarkdown(&buf, testResult()); err != nil {
 		t.Fatalf("FormatMarkdown: %v", err)
 	}
 	out := buf.String()
@@ -34,6 +31,7 @@ func TestFormatMarkdownContainsMetadata(t *testing.T) {
 		"dev",
 		"feature/oauth",
 		"main",
+		"https://github.com/owner/repo/pull/42",
 	}
 	for _, c := range checks {
 		if !strings.Contains(out, c) {
@@ -44,8 +42,7 @@ func TestFormatMarkdownContainsMetadata(t *testing.T) {
 
 func TestFormatMarkdownContainsAnalysis(t *testing.T) {
 	var buf bytes.Buffer
-	err := formatter.FormatMarkdown(&buf, "github", testPR(), testResult())
-	if err != nil {
+	if err := formatter.FormatMarkdown(&buf, testResult()); err != nil {
 		t.Fatalf("FormatMarkdown: %v", err)
 	}
 	out := buf.String()
@@ -62,8 +59,7 @@ func TestFormatMarkdownContainsAnalysis(t *testing.T) {
 
 func TestFormatMarkdownChangedFiles(t *testing.T) {
 	var buf bytes.Buffer
-	err := formatter.FormatMarkdown(&buf, "github", testPR(), testResult())
-	if err != nil {
+	if err := formatter.FormatMarkdown(&buf, testResult()); err != nil {
 		t.Fatalf("FormatMarkdown: %v", err)
 	}
 	out := buf.String()
@@ -77,33 +73,36 @@ func TestFormatMarkdownChangedFiles(t *testing.T) {
 
 func TestFormatMarkdownWarnings(t *testing.T) {
 	var buf bytes.Buffer
-	err := formatter.FormatMarkdown(&buf, "github", testPR(), testResult())
-	if err != nil {
+	if err := formatter.FormatMarkdown(&buf, testResult()); err != nil {
 		t.Fatalf("FormatMarkdown: %v", err)
 	}
-	out := buf.String()
-	if !strings.Contains(out, "New authentication flow") {
+	if !strings.Contains(buf.String(), "New authentication flow") {
 		t.Error("output missing warning")
 	}
 }
 
-func TestFormatMarkdownNoDescription(t *testing.T) {
-	pr := domain.PullRequest{
-		Repository: "o/r",
-		ID:         "1",
-		Title:      "Quick fix",
-	}
-	result := domain.AnalysisResult{
-		ChangeType: domain.ChangeTypeBugfix,
-		RiskLevel:  domain.RiskLevelLow,
+func TestFormatMarkdownMinimalResult(t *testing.T) {
+	result := prism.Result{
+		PR: prism.PRInfo{
+			Provider:   "github",
+			Repository: "o/r",
+			ID:         "1",
+			Title:      "Quick fix",
+		},
+		Analysis: prism.AnalysisResult{
+			ChangeType: "bugfix",
+			RiskLevel:  "low",
+		},
 	}
 	var buf bytes.Buffer
-	err := formatter.FormatMarkdown(&buf, "github", pr, result)
-	if err != nil {
+	if err := formatter.FormatMarkdown(&buf, result); err != nil {
 		t.Fatalf("FormatMarkdown: %v", err)
 	}
 	out := buf.String()
-	if strings.Contains(out, "### Description") {
-		t.Error("should not include Description section when description is empty")
+	if !strings.Contains(out, "# Quick fix") {
+		t.Error("output missing title")
+	}
+	if !strings.Contains(out, "bugfix") {
+		t.Error("output missing change type")
 	}
 }

@@ -8,12 +8,12 @@ import (
 
 func TestParse(t *testing.T) {
 	tests := []struct {
-		name    string
-		input   string
+		name      string
+		input     string
 		wantOwner string
 		wantRepo  string
 		wantNum   int
-		wantErr bool
+		wantErr   bool
 	}{
 		{
 			name:      "valid PR URL",

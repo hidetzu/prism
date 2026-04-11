@@ -181,9 +181,16 @@ func Prompt(ctx context.Context, opts AnalyzeOptions) (string, error) {
 	return fmt.Sprintf("%s\n\n---\n\n%s", bundle.SystemPrompt, bundle.UserPrompt), nil
 }
 
+// newRegistry is the registry constructor used by Analyze and Prompt.
+// Tests in this package may override it to inject a registry that targets
+// a local httptest server. This is the only test seam exposed inside pkg/prism.
+var newRegistry = func(githubToken string) *provider.Registry {
+	return provider.NewRegistry(githubToken)
+}
+
 // resolveProvider builds the provider and PRRef from AnalyzeOptions.
 func resolveProvider(opts AnalyzeOptions) (provider.Provider, domain.PRRef, error) {
-	reg := provider.NewRegistry(opts.GitHubToken)
+	reg := newRegistry(opts.GitHubToken)
 	p, err := reg.Resolve(opts.Provider, opts.PRURL)
 	if err != nil {
 		// Registry errors are either unknown host (invalid) or plugin-not-found (unsupported).

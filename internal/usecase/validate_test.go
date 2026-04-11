@@ -1,37 +1,10 @@
 package usecase_test
 
 import (
-	"errors"
 	"testing"
 
-	"github.com/hidetzu/prism/internal/domain"
 	"github.com/hidetzu/prism/internal/usecase"
 )
-
-func TestValidateAnalyzeOptions(t *testing.T) {
-	tests := []struct {
-		format  string
-		wantErr bool
-	}{
-		{"json", false},
-		{"markdown", false},
-		{"text", false},
-		{"", false},
-		{"xml", true},
-	}
-	for _, tt := range tests {
-		err := usecase.ValidateAnalyzeOptions(usecase.AnalyzeOptions{Format: tt.format})
-		if tt.wantErr && err == nil {
-			t.Errorf("format %q: expected error", tt.format)
-		}
-		if !tt.wantErr && err != nil {
-			t.Errorf("format %q: unexpected error: %v", tt.format, err)
-		}
-		if tt.wantErr && err != nil && !errors.Is(err, domain.ErrInvalidArgs) {
-			t.Errorf("format %q: error should wrap ErrInvalidArgs", tt.format)
-		}
-	}
-}
 
 func TestValidatePromptOptions(t *testing.T) {
 	tests := []struct {
