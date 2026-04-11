@@ -15,7 +15,7 @@ import (
 	"github.com/hidetzu/prism/pkg/prism"
 )
 
-const version = "0.3.0-dev"
+const version = "0.3.0"
 
 // Exit codes as defined in docs/spec.md.
 const (
