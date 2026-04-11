@@ -1,5 +1,17 @@
 # CLI Specification
 
+## Global Flags
+
+The following flag is available on all subcommands:
+
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--provider` | string | (auto-detect) | Provider name (e.g. `github`, `codecommit`); auto-detected from URL if omitted |
+
+When `--provider` is specified, URL-based auto-detection is skipped and the given provider is used directly.
+
+---
+
 ## Commands
 
 ### `prism analyze`
@@ -94,7 +106,7 @@ prism fetch <PR_URL> [flags]
 
 ### Config file
 
-Loaded from `~/.config/prism/config.yaml` by default. Override with `--config` flag or `PRCTX_CONFIG` environment variable.
+Loaded from `~/.config/prism/config.yaml` by default. Override with `--config` flag or `PRISM_CONFIG` environment variable.
 
 ```yaml
 github_token: ghp_xxxxxxxxxxxx
@@ -108,7 +120,7 @@ default_lang: en
 | Variable | Description |
 |----------|-------------|
 | `GITHUB_TOKEN` | GitHub API authentication token (overrides config file) |
-| `PRCTX_CONFIG` | Override config file path |
+| `PRISM_CONFIG` | Override config file path |
 
 ### Custom Templates
 

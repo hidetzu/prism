@@ -28,8 +28,11 @@ graph TD
     FMT --> DOM
     PMT --> DOM
 
-    PRV --- GH["GitHub"]
-    PRV --- CC["CodeCommit<br/><i>planned</i>"]
+    PRV --- REG["Registry"]
+    REG --- GH["GitHub<br/><i>built-in</i>"]
+    REG --- PLG["Plugin Executor"]
+    PLG --- CC["prism-provider-codecommit"]
+    PLG --- ETC["prism-provider-..."]
 
     FMT --- JSON["JSON"]
     FMT --- MD["Markdown"]
@@ -87,6 +90,12 @@ type Provider interface {
 
 All provider-specific data is normalized into domain models at the provider boundary.
 
+The provider layer consists of:
+
+- **Registry** — resolves a provider by name or auto-detects from URL. GitHub is built-in; other providers are discovered as external plugin binaries (`prism-provider-<name>`) on PATH.
+- **Plugin Executor** — runs an external provider binary as a subprocess, parses its stdout JSON into domain models, and enriches files with language/test/config classification.
+- **Plugin Protocol** — plugins are invoked as `prism-provider-<name> fetch <PR_URL>` and return a JSON object to stdout. See [ADR-0001](adr/0001-provider-plugin-architecture.md) for details.
+
 ### `internal/classifier`
 
 Determines change type based on PR title, description, file paths, and diff content.
@@ -111,7 +120,7 @@ Orchestrates the pipeline: fetch → classify → analyze → format/render. Eac
 
 ## Design Principles
 
-1. **Provider abstraction first** — New PR sources should only require implementing the `Provider` interface
+1. **Provider abstraction first** — New PR sources are added as external plugin binaries without modifying prism itself
 2. **Domain models are the contract** — All packages communicate through domain types
 3. **Output stability** — JSON schema must remain backward-compatible within a major version
 4. **Testability** — All external dependencies are behind interfaces; use fixtures and golden files for output verification

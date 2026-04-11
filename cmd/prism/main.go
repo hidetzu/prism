@@ -9,11 +9,11 @@ import (
 
 	"github.com/hidetzu/prism/internal/config"
 	"github.com/hidetzu/prism/internal/domain"
-	ghprovider "github.com/hidetzu/prism/internal/provider/github"
+	"github.com/hidetzu/prism/internal/provider"
 	"github.com/hidetzu/prism/internal/usecase"
 )
 
-const version = "0.1.0-dev"
+const version = "0.2.0-alpha.1"
 
 // Exit codes as defined in docs/spec.md.
 const (
@@ -52,6 +52,8 @@ func rootCmd() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
+
+	cmd.PersistentFlags().String("provider", "", "Provider name (e.g. github, codecommit); auto-detected from URL if omitted")
 
 	cmd.AddCommand(
 		analyzeCmd(),
@@ -107,6 +109,20 @@ func fetchCmd() *cobra.Command {
 	return cmd
 }
 
+func resolveProvider(cmd *cobra.Command, cfg config.Config, prURL string) (provider.Provider, domain.PRRef, error) {
+	providerName, _ := cmd.Flags().GetString("provider")
+	reg := provider.NewRegistry(cfg.GitHubToken)
+	p, err := reg.Resolve(providerName, prURL)
+	if err != nil {
+		return nil, domain.PRRef{}, fmt.Errorf("%w: %v", domain.ErrInvalidArgs, err)
+	}
+	ref, err := p.Parse(prURL)
+	if err != nil {
+		return nil, domain.PRRef{}, fmt.Errorf("%w: invalid PR URL: %v", domain.ErrInvalidArgs, err)
+	}
+	return p, ref, nil
+}
+
 func runAnalyze(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("%w: PR URL is required", domain.ErrInvalidArgs)
@@ -118,10 +134,9 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("load config: %w", err)
 	}
 
-	p := newProvider(cfg)
-	ref, err := p.Parse(args[0])
+	p, ref, err := resolveProvider(cmd, cfg, args[0])
 	if err != nil {
-		return fmt.Errorf("%w: invalid PR URL: %v", domain.ErrInvalidArgs, err)
+		return err
 	}
 
 	format, _ := cmd.Flags().GetString("format")
@@ -145,10 +160,9 @@ func runPrompt(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("load config: %w", err)
 	}
 
-	p := newProvider(cfg)
-	ref, err := p.Parse(args[0])
+	p, ref, err := resolveProvider(cmd, cfg, args[0])
 	if err != nil {
-		return fmt.Errorf("%w: invalid PR URL: %v", domain.ErrInvalidArgs, err)
+		return err
 	}
 
 	mode, _ := cmd.Flags().GetString("mode")
@@ -182,10 +196,9 @@ func runFetch(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("load config: %w", err)
 	}
 
-	p := newProvider(cfg)
-	ref, err := p.Parse(args[0])
+	p, ref, err := resolveProvider(cmd, cfg, args[0])
 	if err != nil {
-		return fmt.Errorf("%w: invalid PR URL: %v", domain.ErrInvalidArgs, err)
+		return err
 	}
 
 	format, _ := cmd.Flags().GetString("format")
@@ -193,9 +206,4 @@ func runFetch(cmd *cobra.Command, args []string) error {
 	return usecase.Fetch(cmd.Context(), p, ref, usecase.FetchOptions{
 		Format: format,
 	}, os.Stdout)
-}
-
-func newProvider(cfg config.Config) *ghprovider.Provider {
-	token := cfg.GitHubToken
-	return ghprovider.NewProvider(token)
 }

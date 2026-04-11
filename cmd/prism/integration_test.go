@@ -64,8 +64,20 @@ func TestCLIAnalyzeInvalidURL(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if !strings.Contains(err.Error(), "invalid PR URL") {
-		t.Errorf("error = %q, want 'invalid PR URL'", err.Error())
+	if !strings.Contains(err.Error(), "cannot auto-detect provider") {
+		t.Errorf("error = %q, want 'cannot auto-detect provider'", err.Error())
+	}
+}
+
+func TestCLIAnalyzeWithUnknownProvider(t *testing.T) {
+	cmd := rootCmd()
+	cmd.SetArgs([]string{"analyze", "https://example.com/pr/1", "--provider", "nonexistent"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if !strings.Contains(err.Error(), "not found") {
+		t.Errorf("error = %q, want 'not found'", err.Error())
 	}
 }
 
